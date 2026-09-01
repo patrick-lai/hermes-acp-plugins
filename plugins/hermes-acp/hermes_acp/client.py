@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 import contextlib
 import threading
-from collections.abc import Coroutine
+from collections.abc import Callable, Coroutine
 from dataclasses import dataclass
 from typing import Any, TypeVar, cast
 
@@ -49,6 +49,10 @@ class ACPProtocolError(ACPError):
 
 class ACPTimeoutError(ACPError):
     """The configured whole-call deadline elapsed."""
+
+
+class ACPInterruptedError(ACPError):
+    """Hermes cancelled the turn while the ACP backend was running."""
 
 
 @dataclass(frozen=True, slots=True)
@@ -143,13 +147,23 @@ class _ReverseClient:
         del conn
 
 
-def execute(settings: ACPSettings, prompt: str) -> ACPResult:
+def execute(
+    settings: ACPSettings,
+    prompt: str,
+    *,
+    cancel_check: Callable[[], bool] | None = None,
+) -> ACPResult:
     """Run one ACP call from synchronous Hermes middleware."""
 
-    return _run_coroutine(execute_async(settings, prompt))
+    return _run_coroutine(execute_async(settings, prompt, cancel_check=cancel_check))
 
 
-async def execute_async(settings: ACPSettings, prompt: str) -> ACPResult:
+async def execute_async(
+    settings: ACPSettings,
+    prompt: str,
+    *,
+    cancel_check: Callable[[], bool] | None = None,
+) -> ACPResult:
     """Spawn, initialize, prompt, collect chunks, and forcibly clean up."""
 
     reverse = _ReverseClient(settings.permission_mode)
@@ -188,28 +202,31 @@ async def execute_async(settings: ACPSettings, prompt: str) -> ACPResult:
             )
             try:
                 async with asyncio.timeout(settings.timeout_seconds):
-                    done, _ = await asyncio.wait(
-                        {lifecycle_task, process_wait_task},
-                        return_when=asyncio.FIRST_COMPLETED,
-                    )
-                    if lifecycle_task in done:
-                        result = lifecycle_task.result()
-                    else:
-                        return_code = process_wait_task.result()
-                        raise ACPProcessError(
-                            "ACP backend exited before completing the protocol "
-                            f"(status {return_code})"
+                    while True:
+                        done, _ = await asyncio.wait(
+                            {lifecycle_task, process_wait_task},
+                            timeout=0.25 if cancel_check is not None else None,
+                            return_when=asyncio.FIRST_COMPLETED,
                         )
+                        if lifecycle_task in done:
+                            result = lifecycle_task.result()
+                            break
+                        if process_wait_task in done:
+                            return_code = process_wait_task.result()
+                            raise ACPProcessError(
+                                "ACP backend exited before completing the protocol "
+                                f"(status {return_code})"
+                            )
+                        if cancel_check is not None and cancel_check():
+                            raise ACPInterruptedError("ACP turn was interrupted")
             except TimeoutError:
-                session_id = session_state.get("session_id")
-                if session_id:
-                    with contextlib.suppress(Exception):
-                        await asyncio.wait_for(
-                            connection.cancel(session_id=session_id), timeout=1.0
-                        )
+                await _cancel_session(connection, session_state)
                 failure = ACPTimeoutError(
                     f"ACP backend timed out after {settings.timeout_seconds:g} seconds"
                 )
+            except ACPInterruptedError as exc:
+                await _cancel_session(connection, session_state)
+                failure = exc
             except Exception as exc:
                 failure = exc
             finally:
@@ -258,6 +275,13 @@ async def execute_async(settings: ACPSettings, prompt: str) -> ACPResult:
         advertised_auth_methods=result.advertised_auth_methods,
         stderr=stderr,
     )
+
+
+async def _cancel_session(connection: Any, session_state: dict[str, str]) -> None:
+    session_id = session_state.get("session_id")
+    if session_id:
+        with contextlib.suppress(Exception):
+            await asyncio.wait_for(connection.cancel(session_id=session_id), timeout=1.0)
 
 
 async def _run_lifecycle(

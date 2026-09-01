@@ -6,7 +6,13 @@ from pathlib import Path
 import pytest
 from conftest import read_events
 
-from hermes_acp.client import ACPProcessError, ACPProtocolError, ACPTimeoutError, execute
+from hermes_acp.client import (
+    ACPInterruptedError,
+    ACPProcessError,
+    ACPProtocolError,
+    ACPTimeoutError,
+    execute,
+)
 
 
 def test_lifecycle_framing_message_and_thought_updates(fake_settings) -> None:
@@ -76,6 +82,20 @@ def test_timeout_sends_cancel_and_cleans_up(fake_settings) -> None:
     settings, events_path = fake_settings(mode="hang", timeout_seconds=2)
     with pytest.raises(ACPTimeoutError, match="timed out"):
         execute(settings, "never completes")
+    assert "cancel" in [event["event"] for event in read_events(events_path)]
+
+
+def test_interrupt_sends_cancel_and_cleans_up(fake_settings) -> None:
+    settings, events_path = fake_settings(mode="hang", timeout_seconds=5)
+    checks = 0
+
+    def interrupted() -> bool:
+        nonlocal checks
+        checks += 1
+        return checks >= 2
+
+    with pytest.raises(ACPInterruptedError, match="interrupted"):
+        execute(settings, "stop this turn", cancel_check=interrupted)
     assert "cancel" in [event["event"] for event in read_events(events_path)]
 
 

@@ -57,7 +57,7 @@ wheels = [
 
 [[package]]
 name = "hermes-acp"
-version = "0.2.1"
+version = "0.2.2"
 source = { editable = "plugins/hermes-acp" }
 dependencies = [
     { name = "agent-client-protocol" },

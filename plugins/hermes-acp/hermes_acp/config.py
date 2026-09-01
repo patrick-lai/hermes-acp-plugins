@@ -10,7 +10,7 @@ from pathlib import Path
 from typing import Any
 
 DEFAULT_TIMEOUT_SECONDS = 300.0
-PLUGIN_VERSION = "0.2.1"
+PLUGIN_VERSION = "0.2.2"
 
 
 @dataclass(frozen=True, slots=True)
