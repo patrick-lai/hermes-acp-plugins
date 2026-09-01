@@ -105,6 +105,11 @@ class FakeAgent:
             session_id=session_id,
             update=acp.update_agent_message_text("Hello "),
         )
+        if self.mode == "large_frame":
+            await self.connection.session_update(
+                session_id=session_id,
+                update=acp.update_agent_message_text("x" * 131_072),
+            )
         await self.connection.session_update(
             session_id=session_id,
             update=acp.update_agent_message_text("from ACP."),

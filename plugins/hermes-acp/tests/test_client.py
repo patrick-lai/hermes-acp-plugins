@@ -38,6 +38,14 @@ def test_success_survives_forced_post_response_cleanup(fake_settings) -> None:
     assert result.stop_reason == "end_turn"
 
 
+def test_large_json_line_from_agent_is_accepted(fake_settings) -> None:
+    settings, _ = fake_settings(mode="large_frame")
+    result = execute(settings, "return one large ACP frame")
+
+    assert result.content == f"Hello {'x' * 131_072}from ACP."
+    assert result.stop_reason == "end_turn"
+
+
 def test_permission_reject_is_default(fake_settings) -> None:
     settings, events_path = fake_settings(mode="permission")
     execute(settings, "permission please")

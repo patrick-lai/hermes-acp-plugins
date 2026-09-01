@@ -29,6 +29,7 @@ from acp.schema import (
 from .config import ACPSettings
 
 _T = TypeVar("_T")
+_MAX_FRAME_BYTES = 16 * 1024 * 1024
 _MAX_STDERR_CHARS = 65_536
 
 
@@ -163,7 +164,10 @@ async def execute_async(settings: ACPSettings, prompt: str) -> ACPResult:
             settings.backend.command,
             *settings.backend.args,
             cwd=settings.cwd,
-            transport_kwargs={"shutdown_timeout": 1.0},
+            transport_kwargs={
+                "limit": _MAX_FRAME_BYTES,
+                "shutdown_timeout": 1.0,
+            },
         ) as (connection, spawned):
             process = spawned
             stderr_task = asyncio.create_task(

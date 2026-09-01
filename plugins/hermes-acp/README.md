@@ -14,14 +14,19 @@ independently. The provider remains `acp`; only the model name changes.
 ## Install
 
 This repository is a multi-plugin workspace. Install this plugin member, not
-the workspace root:
+the workspace root, then install its Python entry point into Hermes's virtual
+environment. Hermes v0.21 installs the plugin files and Desktop extension but
+does not install the Python distribution automatically:
 
 ```sh
 hermes plugins install patrick-lai/hermes-acp/plugins/hermes-acp --enable
+uv pip install \
+  --python "$HOME/.hermes/hermes-agent/venv/bin/python" \
+  "$HOME/.hermes/plugins/hermes-acp"
 ```
 
-Hermes installs the Python backend and the Desktop UI from the same folder. A
-pip installation is also supported when only the backend is wanted:
+For a backend-only installation, skip the plugin-manager command and install
+the Git subdirectory directly:
 
 ```sh
 uv pip install \

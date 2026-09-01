@@ -37,7 +37,11 @@ def _register_provider_if_available() -> bool:
     # Satisfy Hermes's API-key-shaped early registry without asking the user
     # for a fake credential. This marker stays process-local and middleware
     # prevents the placeholder transport from receiving it.
-    os.environ.setdefault("HERMES_ACP_ENABLED", "1")
+    # Hermes treats API-key-shaped values shorter than four characters as
+    # unusable, so use a descriptive local sentinel instead of ``"1"``. The
+    # value is only an availability marker; middleware intercepts the request
+    # before the placeholder transport can receive it.
+    os.environ.setdefault("HERMES_ACP_ENABLED", "enabled")
     register_provider(
         ProviderProfile(
             name="acp",
