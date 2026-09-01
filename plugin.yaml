@@ -1,0 +1,38 @@
+name: hermes-acp
+version: 0.1.0
+description: Run Grok and Codex through Agent Client Protocol backends.
+author: Patrick Lai
+kind: standalone
+manifest_version: 2
+api_version: 1
+python_dependencies:
+  - agent-client-protocol==0.9.0
+config_schema:
+  permission_mode:
+    type: string
+    default: reject
+  timeout_seconds:
+    type: number
+    default: 300
+  cwd:
+    type: string
+  auth_method:
+    type: string
+  grok:
+    type: object
+  codex:
+    type: object
+  grok_command:
+    type: string
+  grok_args:
+    type: array
+  codex_command:
+    type: string
+  codex_args:
+    type: array
+license: MIT
+homepage: https://github.com/patrick-lai/hermes-acp
+tags:
+  - acp
+  - grok
+  - codex
