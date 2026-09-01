@@ -50,7 +50,7 @@ def test_registration_profile_and_context_are_idempotent(monkeypatch) -> None:
         auth_type="api_key",
         env_vars=("HERMES_ACP_ENABLED",),
         supports_health_check=False,
-        fallback_models=("grok", "codex"),
+        fallback_models=("grok", "codex", "claude", "cursor"),
     )
     assert context.calls == [("llm_execution", llm_execution_middleware)]
 

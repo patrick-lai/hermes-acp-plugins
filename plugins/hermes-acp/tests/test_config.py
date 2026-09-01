@@ -4,16 +4,44 @@ from pathlib import Path
 
 import pytest
 
-from hermes_acp.config import backend_for_model, command_argv, plugin_settings, resolve_settings
+from hermes_acp.config import (
+    available_models,
+    backend_for_model,
+    command_argv,
+    plugin_settings,
+    resolve_settings,
+)
 
 
-def test_exact_grok_and_codex_launch_specs() -> None:
+def test_exact_launch_specs_for_every_selectable_acp_model() -> None:
     assert command_argv(backend_for_model("grok")) == ("grok", "agent", "stdio")
     assert command_argv(backend_for_model("codex")) == (
         "npx",
         "-y",
         "@agentclientprotocol/codex-acp@1.7.0",
     )
+    assert command_argv(backend_for_model("claude")) == (
+        "npx",
+        "-y",
+        "@agentclientprotocol/claude-agent-acp",
+    )
+    assert command_argv(backend_for_model("cursor")) == ("cursor-agent", "agent", "acp")
+    assert available_models() == ("grok", "codex", "claude", "cursor")
+
+
+def test_blank_model_uses_the_current_plugin_default(tmp_path: Path) -> None:
+    config = {
+        "plugins": {
+            "entries": {
+                "hermes-acp": {"settings": {"default_model": "cursor", "cwd": str(tmp_path)}}
+            }
+        }
+    }
+
+    settings = resolve_settings("", config=config)
+
+    assert settings.backend.name == "cursor"
+    assert command_argv(settings.backend) == ("cursor-agent", "agent", "acp")
 
 
 def test_backend_override_and_canonical_settings(tmp_path: Path) -> None:
@@ -59,10 +87,23 @@ def test_flat_backend_override_is_supported(tmp_path: Path) -> None:
     assert settings.permission_mode == "reject"
 
 
-@pytest.mark.parametrize("model", ["claude", "cursor", "", "Grok latest"])
+@pytest.mark.parametrize("model", ["Grok latest", "aider"])
 def test_unsupported_models_are_rejected(model: str) -> None:
-    with pytest.raises(ValueError, match="choose exactly"):
+    with pytest.raises(ValueError, match="choose one"):
         backend_for_model(model)
+
+
+def test_invalid_default_model_is_rejected(tmp_path: Path) -> None:
+    config = {
+        "plugins": {
+            "entries": {
+                "hermes-acp": {"settings": {"default_model": "not-an-agent", "cwd": str(tmp_path)}}
+            }
+        }
+    }
+
+    with pytest.raises(ValueError, match="Unsupported ACP model"):
+        resolve_settings("auto", config=config)
 
 
 def test_permission_mode_is_fail_closed(tmp_path: Path) -> None:

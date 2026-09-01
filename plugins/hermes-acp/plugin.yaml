@@ -1,0 +1,65 @@
+name: hermes-acp
+version: 0.2.0
+description: Live-selectable Grok, Codex, Claude, and Cursor ACP model backends.
+author: Patrick Lai
+kind: standalone
+manifest_version: 2
+api_version: 1
+python_dependencies:
+  - agent-client-protocol==0.9.0
+config_schema:
+  default_model:
+    type: string
+    default: codex
+    description: "Default ACP model for new Hermes sessions: grok, codex, claude, or cursor."
+  permission_mode:
+    type: string
+    default: reject
+    description: Reject every ACP permission request, or explicitly allow a single request.
+  timeout_seconds:
+    type: number
+    default: 300
+    description: Whole ACP lifecycle deadline in seconds.
+  cwd:
+    type: string
+    description: Optional working directory override for ACP sessions.
+  auth_method:
+    type: string
+    description: Exact authentication method advertised by an ACP agent.
+  grok:
+    type: object
+    description: Command and arguments override for Grok ACP.
+  codex:
+    type: object
+    description: Command and arguments override for Codex ACP.
+  claude:
+    type: object
+    description: Command and arguments override for Claude ACP.
+  cursor:
+    type: object
+    description: Command and arguments override for Cursor ACP.
+  grok_command:
+    type: string
+  grok_args:
+    type: array
+  codex_command:
+    type: string
+  codex_args:
+    type: array
+  claude_command:
+    type: string
+  claude_args:
+    type: array
+  cursor_command:
+    type: string
+  cursor_args:
+    type: array
+license: MIT
+homepage: https://github.com/patrick-lai/hermes-acp
+tags:
+  - acp
+  - grok
+  - codex
+  - claude
+  - cursor
+  - desktop

@@ -39,7 +39,15 @@ _DEFAULT_BACKENDS = {
         "npx",
         ("-y", "@agentclientprotocol/codex-acp@1.7.0"),
     ),
+    "claude": BackendSpec(
+        "claude",
+        "npx",
+        ("-y", "@agentclientprotocol/claude-agent-acp"),
+    ),
+    "cursor": BackendSpec("cursor", "cursor-agent", ("agent", "acp")),
 }
+
+ACP_MODELS = tuple(_DEFAULT_BACKENDS)
 
 
 def load_hermes_config() -> Mapping[str, Any]:
@@ -86,13 +94,20 @@ def backend_for_model(
     model: str,
     settings: Mapping[str, Any] | None = None,
 ) -> BackendSpec:
-    """Resolve ``grok`` or ``codex`` and apply an optional command override."""
+    """Resolve a live ACP model selection and apply its command override.
 
-    backend_name = model.strip().lower()
-    if backend_name not in _DEFAULT_BACKENDS:
-        raise ValueError(f"Unsupported ACP model {model!r}; choose exactly 'grok' or 'codex'")
-    default = _DEFAULT_BACKENDS[backend_name]
+    Hermes's own model picker sends an explicit model for a session or bot.
+    An empty, ``auto``, or ``default`` model instead resolves this plugin's
+    current ``default_model`` setting, which lets the Desktop ACP page change
+    the profile default without restarting or reinstalling the plugin.
+    """
+
     values = settings or {}
+    backend_name = _selected_model(model, values)
+    if backend_name not in _DEFAULT_BACKENDS:
+        choices = ", ".join(repr(name) for name in ACP_MODELS)
+        raise ValueError(f"Unsupported ACP model {model!r}; choose one of {choices}")
+    default = _DEFAULT_BACKENDS[backend_name]
     raw = values.get(backend_name)
     flat_command = values.get(f"{backend_name}_command")
     flat_args = values.get(f"{backend_name}_args")
@@ -114,6 +129,12 @@ def backend_for_model(
         raise ValueError(f"{backend_name}.command must not be empty")
     args = _string_tuple(args_value, f"{backend_name}.args")
     return BackendSpec(backend_name, command, args)
+
+
+def available_models() -> tuple[str, ...]:
+    """Return the stable model identifiers exposed to Hermes's model picker."""
+
+    return ACP_MODELS
 
 
 def resolve_settings(
@@ -183,3 +204,14 @@ def _string_tuple(value: Any, label: str) -> tuple[str, ...]:
     if any(not item for item in parsed):
         raise ValueError(f"{label} must not contain empty arguments")
     return parsed
+
+
+def _selected_model(model: str, settings: Mapping[str, Any]) -> str:
+    requested = model.strip().lower()
+    if requested not in {"", "auto", "default"}:
+        return requested
+
+    configured = settings.get("default_model", "codex")
+    if not isinstance(configured, str) or not configured.strip():
+        raise ValueError("hermes-acp default_model must be a non-empty ACP model name")
+    return configured.strip().lower()

@@ -267,7 +267,7 @@ async def _run_lifecycle(
         client_info=Implementation(
             name="hermes-acp",
             title="Hermes ACP",
-            version="0.1.0",
+            version="0.2.0",
         ),
     )
     if initialized.protocol_version != acp.PROTOCOL_VERSION:

@@ -1,12 +1,14 @@
 .PHONY: format verify
 
+PLUGIN ?= plugins/hermes-acp
+
 format:
-	.venv/bin/ruff format .
-	.venv/bin/ruff check --fix .
+	cd $(PLUGIN) && uv run --extra test ruff format .
+	cd $(PLUGIN) && uv run --extra test ruff check --fix .
 
 verify:
-	.venv/bin/ruff format --check .
-	.venv/bin/ruff check .
-	.venv/bin/mypy hermes_acp
-	.venv/bin/python -m build --no-isolation
-	.venv/bin/python -m pytest -q
+	cd $(PLUGIN) && uv run --extra test ruff format --check .
+	cd $(PLUGIN) && uv run --extra test ruff check .
+	cd $(PLUGIN) && uv run --extra test mypy hermes_acp
+	cd $(PLUGIN) && uv run --extra test python -m build --no-isolation
+	cd $(PLUGIN) && uv run --extra test pytest -q

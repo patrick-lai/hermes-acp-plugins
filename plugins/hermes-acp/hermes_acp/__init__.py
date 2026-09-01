@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 from typing import Any
 
+from .config import available_models
 from .middleware import llm_execution_middleware
 
 _MIDDLEWARE_REGISTERED = False
@@ -48,7 +49,7 @@ def _register_provider_if_available() -> bool:
             auth_type="api_key",
             env_vars=("HERMES_ACP_ENABLED",),
             supports_health_check=False,
-            fallback_models=("grok", "codex"),
+            fallback_models=available_models(),
         )
     )
     _PROVIDER_REGISTERED = True

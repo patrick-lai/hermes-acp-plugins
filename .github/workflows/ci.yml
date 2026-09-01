@@ -18,14 +18,19 @@ jobs:
           python-version: "3.11"
           cache: pip
       - name: Install package and test dependencies
-        run: python -m pip install -e '.[test]'
+        run: python -m pip install -e 'plugins/hermes-acp[test]'
       - name: Check formatting
+        working-directory: plugins/hermes-acp
         run: ruff format --check .
       - name: Lint
+        working-directory: plugins/hermes-acp
         run: ruff check .
       - name: Typecheck
+        working-directory: plugins/hermes-acp
         run: mypy hermes_acp
       - name: Build package
+        working-directory: plugins/hermes-acp
         run: python -m build --no-isolation
       - name: Run deterministic tests
+        working-directory: plugins/hermes-acp
         run: pytest -q
