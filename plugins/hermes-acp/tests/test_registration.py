@@ -56,6 +56,7 @@ def test_registration_profile_and_context_are_idempotent(monkeypatch) -> None:
     )
     assert context.calls == [("llm_execution", llm_execution_middleware)]
     assert os.environ["HERMES_ACP_ENABLED"] == "enabled"
+    assert len(os.environ["HERMES_ACP_ENABLED"]) >= 4
 
 
 def test_register_without_hermes_is_safe(monkeypatch) -> None:

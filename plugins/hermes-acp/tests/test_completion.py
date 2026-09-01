@@ -4,6 +4,8 @@ from hermes_acp.completion import make_completion
 def test_completion_has_openai_attribute_shape_and_zero_usage() -> None:
     completion = make_completion(model="grok", content="answer", reasoning="thought")
     assert completion.model == "grok"
+    assert completion.provider == "acp"
+    assert completion.acp_backend == "grok"
     assert completion.choices[0].message.content == "answer"
     assert completion.choices[0].message.tool_calls is None
     assert completion.choices[0].message.reasoning == "thought"

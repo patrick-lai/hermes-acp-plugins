@@ -55,6 +55,7 @@ function ACPSettingsPage() {
   const selectedModel = useValue(host.state.model)
   const [updating, setUpdating] = useState('')
   const current = String(selectedModel || '').trim().toLowerCase()
+  const selected = PROVIDERS.find(provider => provider.id === current)
 
   const select = async model => {
     setUpdating(model)
@@ -113,6 +114,25 @@ function ACPSettingsPage() {
               children:
                 'Open the model chip in any chat, or the Model field in a Bot Mode profile. Select provider “acp”, then choose Codex, Claude, Cursor, or Grok. That override is live for only that session or bot profile.'
             })
+          ]
+        })
+      }),
+      jsx('section', {
+        className: 'mt-3 max-w-3xl rounded-xl border border-(--ui-stroke-tertiary) p-4',
+        children: jsxs('div', {
+          className: 'space-y-3 text-sm text-(--ui-text-secondary)',
+          children: [
+            jsx('h2', { className: 'font-semibold text-(--ui-text-primary)', children: 'Runtime proof' }),
+            jsx('p', {
+              children: selected
+                ? `Selected agent: ${selected.title}. In the native model picker it must appear under provider “ACP”.`
+                : 'Select an agent under provider “ACP” in the native model picker for this chat.'
+            }),
+            jsx('p', {
+              className: 'text-xs leading-5 text-(--ui-text-tertiary)',
+              children:
+                'Every intercepted turn records “provider=acp”, the backend name, and start/completion status in agent.log without recording the prompt.'
+            }),
           ]
         })
       })

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import logging
 from types import SimpleNamespace
 
 import hermes_acp.middleware as middleware
@@ -22,14 +23,14 @@ def test_non_acp_provider_calls_next_exactly_once() -> None:
     assert calls == [request]
 
 
-def test_acp_provider_is_intercepted_without_calling_next(monkeypatch, tmp_path) -> None:
+def test_acp_provider_is_intercepted_without_calling_next(caplog, monkeypatch, tmp_path) -> None:
     calls = []
     captured = {}
 
     def fake_execute(settings, prompt):
         captured["settings"] = settings
         captured["prompt"] = prompt
-        return SimpleNamespace(content="answer", reasoning="thought")
+        return SimpleNamespace(content="answer", reasoning="thought", stop_reason="end_turn")
 
     monkeypatch.setattr(middleware, "execute", fake_execute)
     request = {
@@ -37,12 +38,13 @@ def test_acp_provider_is_intercepted_without_calling_next(monkeypatch, tmp_path)
         "messages": [{"role": "user", "content": "build it"}],
         "cwd": str(tmp_path),
     }
-    completion = middleware.llm_execution_middleware(
-        request=request,
-        next_call=lambda received: calls.append(received),
-        provider="acp",
-        config={},
-    )
+    with caplog.at_level(logging.INFO, logger="hermes_acp.middleware"):
+        completion = middleware.llm_execution_middleware(
+            request=request,
+            next_call=lambda received: calls.append(received),
+            provider="acp",
+            config={},
+        )
 
     assert calls == []
     assert captured["settings"].backend.command == "npx"
@@ -50,6 +52,10 @@ def test_acp_provider_is_intercepted_without_calling_next(monkeypatch, tmp_path)
     assert completion.choices[0].message.content == "answer"
     assert completion.choices[0].message.tool_calls is None
     assert completion.choices[0].finish_reason == "stop"
+    assert completion.provider == "acp"
+    assert completion.acp_backend == "codex"
+    assert "execution started provider=acp backend=codex executable=npx" in caplog.text
+    assert "execution completed provider=acp backend=codex stop_reason=end_turn" in caplog.text
 
 
 def test_acp_provider_resolves_the_live_default_model_when_request_is_blank(
@@ -77,4 +83,6 @@ def test_acp_provider_resolves_the_live_default_model_when_request_is_blank(
     )
 
     assert captured["settings"].backend.name == "claude"
-    assert completion.model == ""
+    assert completion.model == "claude"
+    assert completion.provider == "acp"
+    assert completion.acp_backend == "claude"

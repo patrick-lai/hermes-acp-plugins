@@ -31,6 +31,8 @@ def make_completion(*, model: str, content: str, reasoning: str) -> SimpleNamesp
         object="chat.completion",
         created=0,
         model=model,
+        provider="acp",
+        acp_backend=model,
         choices=[choice],
         usage=usage,
         reasoning=reasoning or None,

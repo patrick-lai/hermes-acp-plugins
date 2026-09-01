@@ -26,11 +26,13 @@ from acp.schema import (
     ToolCallUpdate,
 )
 
-from .config import ACPSettings
+from .config import PLUGIN_VERSION, ACPSettings
 
 _T = TypeVar("_T")
-_MAX_FRAME_BYTES = 16 * 1024 * 1024
 _MAX_STDERR_CHARS = 65_536
+# ACP uses newline-delimited JSON-RPC. The asyncio default is only 64 KiB,
+# which is too small for agent updates containing rich tool state or images.
+_MAX_STDIO_LINE_BYTES = 16 * 1024 * 1024
 
 
 class ACPError(RuntimeError):
@@ -165,7 +167,7 @@ async def execute_async(settings: ACPSettings, prompt: str) -> ACPResult:
             *settings.backend.args,
             cwd=settings.cwd,
             transport_kwargs={
-                "limit": _MAX_FRAME_BYTES,
+                "limit": _MAX_STDIO_LINE_BYTES,
                 "shutdown_timeout": 1.0,
             },
         ) as (connection, spawned):
@@ -271,7 +273,7 @@ async def _run_lifecycle(
         client_info=Implementation(
             name="hermes-acp",
             title="Hermes ACP",
-            version="0.2.0",
+            version=PLUGIN_VERSION,
         ),
     )
     if initialized.protocol_version != acp.PROTOCOL_VERSION:

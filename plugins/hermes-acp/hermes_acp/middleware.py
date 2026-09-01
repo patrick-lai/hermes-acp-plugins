@@ -2,13 +2,20 @@
 
 from __future__ import annotations
 
+import logging
 from collections.abc import Callable, Mapping
+from pathlib import Path
 from typing import Any
 
-from .client import execute
+from .client import ACPError, execute
 from .completion import make_completion
 from .config import resolve_settings
 from .prompt import format_prompt
+
+logger = logging.getLogger(__name__)
+# Hermes's root logger defaults to WARNING in one-shot mode. Keep this plugin's
+# two credential-safe lifecycle records visible without raising global noise.
+logger.setLevel(logging.INFO)
 
 
 def llm_execution_middleware(
@@ -34,9 +41,31 @@ def llm_execution_middleware(
     messages = request.get("messages") or []
     if not isinstance(messages, (list, tuple)):
         raise TypeError("ACP request messages must be a list or tuple")
-    result = execute(settings, format_prompt(messages))
+    backend = settings.backend.name
+    logger.info(
+        "Hermes ACP execution started provider=acp backend=%s executable=%s cwd=%s",
+        backend,
+        Path(settings.backend.command).name,
+        settings.cwd,
+    )
+    try:
+        result = execute(settings, format_prompt(messages))
+    except ACPError as exc:
+        logger.warning(
+            "Hermes ACP execution failed provider=acp backend=%s error_type=%s error=%s",
+            backend,
+            type(exc).__name__,
+            exc,
+        )
+        raise type(exc)(f"Hermes ACP backend {backend!r} failed: {exc}") from exc
+    logger.info(
+        "Hermes ACP execution completed provider=acp backend=%s stop_reason=%s content_chars=%d",
+        backend,
+        getattr(result, "stop_reason", "unknown"),
+        len(result.content),
+    )
     return make_completion(
-        model=model,
+        model=backend,
         content=result.content,
         reasoning=result.reasoning,
     )

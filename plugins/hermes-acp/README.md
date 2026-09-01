@@ -51,6 +51,10 @@ any agent.
    same provider/model selection. That override belongs to the bot profile and
    does not change the default or other agents.
 
+After the first install or a backend update, restart Hermes Desktop once.
+Hermes discovers the Python provider and its execution middleware when the
+profile backend starts; the Desktop page itself hot-reloads independently.
+
 The Desktop page and the native picker deliberately have different jobs:
 the page controls the profile default, while Hermes owns the live per-session
 and per-bot override lifecycle.
@@ -114,6 +118,29 @@ The default `permission_mode` is `reject`: reverse permission requests are
 cancelled, reverse filesystem and terminal methods are not advertised, and
 unknown extension methods are rejected. `allow_once` is an explicit, one-request
 exception and never selects an `allow_always` option.
+
+## Prove the execution path
+
+The bridge logs a credential-safe start and completion record for every ACP
+turn. It includes `provider=acp`, the selected backend, the executable name,
+and the result status, but never the prompt or command arguments.
+
+Run a fresh one-shot through Hermes and inspect its machine-readable usage:
+
+```sh
+hermes -z 'Return exactly HERMES_ACP_OK.' \
+  --provider acp \
+  --model codex \
+  --usage-file /tmp/hermes-acp-usage.json
+cat /tmp/hermes-acp-usage.json
+hermes logs --since 5m | grep 'Hermes ACP execution'
+```
+
+The response must be `HERMES_ACP_OK`, the usage file must report
+`"provider": "acp"` with `"model": "codex"`, and the log must contain both
+`execution started` and `execution completed` for `backend=codex`. A successful
+response plus those two records proves Hermes intercepted the turn and drove
+the ACP subprocess instead of falling through to the placeholder HTTP URL.
 
 ## Repository layout
 

@@ -93,6 +93,13 @@ class FakeAgent:
             except Exception as exc:
                 self._record("extension_rejected", error=str(exc))
 
+        if self.mode == "large_frame":
+            await self.connection.session_update(
+                session_id=session_id,
+                update=acp.update_agent_message_text("L" * 131_072),
+            )
+            return PromptResponse(stop_reason="end_turn")
+
         await self.connection.session_update(
             session_id=session_id,
             update=acp.update_agent_thought_text("First thought. "),
@@ -105,11 +112,6 @@ class FakeAgent:
             session_id=session_id,
             update=acp.update_agent_message_text("Hello "),
         )
-        if self.mode == "large_frame":
-            await self.connection.session_update(
-                session_id=session_id,
-                update=acp.update_agent_message_text("x" * 131_072),
-            )
         await self.connection.session_update(
             session_id=session_id,
             update=acp.update_agent_message_text("from ACP."),

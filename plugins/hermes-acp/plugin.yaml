@@ -1,5 +1,5 @@
 name: hermes-acp
-version: 0.2.0
+version: 0.2.1
 description: Live-selectable Grok, Codex, Claude, and Cursor ACP model backends.
 author: Patrick Lai
 kind: standalone

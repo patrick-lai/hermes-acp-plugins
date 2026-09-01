@@ -38,11 +38,12 @@ def test_success_survives_forced_post_response_cleanup(fake_settings) -> None:
     assert result.stop_reason == "end_turn"
 
 
-def test_large_json_line_from_agent_is_accepted(fake_settings) -> None:
+def test_large_acp_json_frame_exceeding_asyncio_default_is_supported(fake_settings) -> None:
     settings, _ = fake_settings(mode="large_frame")
-    result = execute(settings, "return one large ACP frame")
+    result = execute(settings, "return a large frame")
 
-    assert result.content == f"Hello {'x' * 131_072}from ACP."
+    assert len(result.content) == 131_072
+    assert set(result.content) == {"L"}
     assert result.stop_reason == "end_turn"
 
 

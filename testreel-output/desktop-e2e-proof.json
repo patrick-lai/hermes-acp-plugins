@@ -1,0 +1,40 @@
+{
+  "result": "passed",
+  "transport": "Hermes Desktop /api/ws JSON-RPC",
+  "backend_port": 54761,
+  "gateway_ready": true,
+  "picker": {
+    "provider": "acp",
+    "model": "codex",
+    "acp_models": [
+      "grok",
+      "codex",
+      "claude",
+      "cursor"
+    ]
+  },
+  "session": {
+    "source": "desktop",
+    "provider": "acp",
+    "model": "codex",
+    "reasoning_effort": "high",
+    "closed": true
+  },
+  "response": {
+    "status": "complete",
+    "text": "DESKTOP_HERMES_ACP_E2E_OK",
+    "usage": {
+      "model": "codex",
+      "input": 0,
+      "output": 0,
+      "reasoning": 0,
+      "prompt": 0,
+      "completion": 0,
+      "total": 0,
+      "calls": 1,
+      "compressions": 0,
+      "avg_latency_s": 6.4,
+      "active_subagents": 0
+    }
+  }
+}
